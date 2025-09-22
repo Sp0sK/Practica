@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Práctica de Sífilis Congénita</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #d1d5db;
+        }
+        .hidden {
+            display: none;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .option-btn:disabled {
+            cursor: default;
+        }
+        .option-btn.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+        }
+        .option-btn.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-2xl mx-auto">
+        <!-- Configuration Screen -->
+        <div id="config-screen" class="card p-8">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Práctica de Sífilis Congénita</h1>
+            <p class="text-gray-600 mb-6">Configura tu sesión de estudio.</p>
+
+            <div class="space-y-6">
+                <!-- Practice Mode -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">1. Modo de Práctica</label>
+                    <div class="flex gap-4">
+                        <label class="flex-1">
+                            <input type="radio" name="mode" value="quiz" class="sr-only peer" checked>
+                            <div class="p-4 border rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                                <span class="font-semibold">Examen</span>
+                                <p class="text-sm text-gray-500">Selecciona la respuesta correcta.</p>
+                            </div>
+                        </label>
+                        <label class="flex-1">
+                            <input type="radio" name="mode" value="flashcard" class="sr-only peer">
+                            <div class="p-4 border rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                                <span class="font-semibold">Flashcard</span>
+                                <p class="text-sm text-gray-500">Muestra la pregunta y luego la respuesta.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question Set -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">2. Grupo de Preguntas</label>
+                    <select id="question-set" class="w-full p-2 border rounded-lg bg-gray-50">
+                        <option value="blocks">Por Bloques</option>
+                        <option value="all">Examen Final (200 preguntas)</option>
+                    </select>
+                </div>
+
+                <!-- Block Size -->
+                <div id="block-size-container">
+                    <label for="block-size" class="block text-sm font-semibold text-gray-700 mb-2">3. Preguntas por Bloque</label>
+                    <input type="number" id="block-size" value="20" min="1" max="200" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <!-- Order -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">4. Orden de Preguntas</label>
+                    <select id="order" class="w-full p-2 border rounded-lg bg-gray-50">
+                        <option value="in-order">En Orden (del documento)</option>
+                        <option value="shuffled">Revueltas</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="start-btn" class="btn btn-primary w-full mt-8">Iniciar Práctica</button>
+        </div>
+
+        <!-- Practice Screen -->
+        <div id="practice-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <p id="progress-text" class="text-sm font-medium text-gray-600"></p>
+                <button id="end-session-btn" class="text-sm text-red-600 hover:underline">Terminar Sesión</button>
+            </div>
+            <div class="card p-6 md:p-8">
+                <div id="question-container">
+                    <h2 id="question-text" class="text-lg font-semibold text-gray-800 mb-6"></h2>
+                    <div id="options-container" class="space-y-3"></div>
+                </div>
+                <div id="flashcard-answer-container" class="hidden">
+                    <p class="text-base text-gray-700"><span class="font-bold">Respuesta Correcta:</span> <span id="flashcard-answer-text"></span></p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-center">
+                 <button id="flashcard-reveal-btn" class="btn btn-primary hidden">Mostrar Respuesta</button>
+            </div>
+            <div class="mt-6 flex justify-between items-center">
+                <button id="prev-question-btn" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M15 18l-6-6 6-6"/></svg>
+                    Anterior
+                </button>
+                <button id="next-question-btn" class="btn btn-primary">
+                    Siguiente
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden">
+            <div class="card text-center p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Sesión Completada!</h2>
+                <p class="text-gray-600 mb-6">Este es tu resultado:</p>
+                <div class="bg-blue-50 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-6">
+                    <p class="text-3xl font-bold text-blue-600"><span id="score-correct"></span>/<span id="score-total"></span></p>
+                </div>
+                <p id="score-percentage" class="text-xl font-semibold text-gray-700 mb-8"></p>
+                <div class="flex gap-4 justify-center">
+                    <button id="restart-btn" class="btn btn-primary">Volver a Intentar</button>
+                    <button id="new-config-btn" class="btn btn-secondary">Nueva Configuración</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // --- DATABASE OF QUESTIONS ---
+    const questionsData = [
+        { id: 1, question: 'Según la guía, ¿cuál es la sensibilidad reportada para VDRL en sífilis congénita?', options: ['A) 78–100%', 'B) 50–70%', 'C) >99%', 'D) 10–30%'], answer: 'A' },
+        { id: 2, question: 'Según la guía, ¿cuál es la especificidad reportada para VDRL en sífilis congénita?', options: ['A) 98%', 'B) 93–98%', 'C) 70–85%', 'D) 90%'], answer: 'A' },
+        { id: 3, question: 'Según la guía, ¿cuál es la sensibilidad reportada para RPR en sífilis congénita?', options: ['A) >99%', 'B) 70–80%', 'C) 40–60%', 'D) 86–100%'], answer: 'D' },
+        { id: 4, question: 'Según la guía, ¿cuál es la especificidad reportada para RPR en sífilis congénita?', options: ['A) 93–98%', 'B) 70–80%', 'C) 98–100%', 'D) 85–90%'], answer: 'A' },
+        { id: 5, question: 'Según la guía, ¿cuál es la sensibilidad reportada para FTA-ABS en sífilis congénita?', options: ['A) >99%', 'B) 40–60%', 'C) 70–100%', 'D) 10–30%'], answer: 'C' },
+        { id: 6, question: 'Según la guía, ¿cuál es la especificidad reportada para FTA-ABS en sífilis congénita?', options: ['A) 80–85%', 'B) 86–90%', 'C) 70–80%', 'D) 94–100%'], answer: 'D' },
+        { id: 7, question: 'Según la guía, ¿cuál es la sensibilidad reportada para IgM por ELISA (sensibilidad) en sífilis congénita?', options: ['A) 38–100%', 'B) >99%', 'C) 10–20%', 'D) 5–15%'], answer: 'A' },
+        { id: 8, question: 'Según la guía, ¿cuál es la especificidad reportada para IgM por ELISA en sífilis congénita?', options: ['A) 93–98%', 'B) 70–80%', 'C) 100%', 'D) 90%'], answer: 'C' },
+        { id: 9, question: 'Según la guía, ¿cuál es la sensibilidad reportada para PCR en LCR (sensibilidad) en sífilis congénita?', options: ['A) 30–40%', 'B) 10–20%', 'C) >95%', 'D) 78–86%'], answer: 'D' },
+        { id: 10, question: 'Según la guía, ¿cuál es la especificidad reportada para PCR en LCR en sífilis congénita?', options: ['A) 100%', 'B) 90–95%', 'C) 70–80%', 'D) 80–85%'], answer: 'A' },
+        { id: 11, question: '¿La relación de títulos VDRL/RPR del RN al menos 4 veces mayor que la madre se recomienda como prueba diagnóstica para sífilis congénita?', options: ['A) Solo en lactantes >6 meses', 'B) Sí, es suficiente para diagnosticar', 'C) No, por baja sensibilidad y no se recomienda como prueba diagnóstica', 'D) Solo en asintomáticos'], answer: 'C' },
+        { id: 12, question: 'En ausencia de infección congénita, los anticuerpos no treponémicos de origen materno deben:', options: ['A) Mantenerse estables hasta los 18 meses', 'B) Negativizarse al mes de vida', 'C) Disminuir a los 3 meses y ser no reactivos a los 6 meses', 'D) Aumentar a los 3 meses y negativizar a los 12 meses'], answer: 'C' },
+        { id: 13, question: 'Respecto a las pruebas treponémicas en el seguimiento del RN expuesto:', options: ['A) No deben usarse para seguimiento; pueden permanecer positivas de por vida', 'B) Son obligatorias mensualmente', 'C) Solo se usan si VDRL es negativo', 'D) Se usan para decidir alta a los 3 meses'], answer: 'A' },
+        { id: 14, question: 'La depuración de anticuerpos treponémicos de origen materno suele ocurrir:', options: ['A) A los 6 meses exactos', 'B) A la semana 6 de vida', 'C) Aproximadamente al mes 15 de vida', 'D) Después de los 24 meses'], answer: 'C' },
+        { id: 15, question: 'Para seguimiento serológico en lactantes serorreactivos (IgG/VDRL/RPR positivos), la guía indica controles:', options: ['A) Solo a los 6 y 12 meses', 'B) Al mes, 2, 4 y 6 meses; luego cada 2 meses hasta desaparición de anticuerpos maternos', 'C) Cada 3 meses hasta los 24 meses', 'D) Mensuales durante los primeros 12 meses'], answer: 'B' },
+        { id: 16, question: 'Una elevación del título VDRL en 4 veces o más durante seguimiento sugiere:', options: ['A) Interferencia por IgM materna', 'B) Reinfección o fracaso terapéutico', 'C) Fenómeno prozona', 'D) Curación serológica'], answer: 'B' },
+        { id: 17, question: 'En RN con IgM positiva al nacimiento, el plan de seguimiento recomendado incluye visitas en:', options: ['A) 1°, 2°, 3°, 6° y 12° mes', 'B) 2°, 4°, 8° y 16° mes', 'C) Mensuales hasta 18 meses', 'D) Solo 1° y 6° mes'], answer: 'A' },
+        { id: 18, question: 'En neurosífilis congénita, el control del LCR debe realizarse:', options: ['A) Solo si reaparecen síntomas', 'B) Punción lumbar cada 6 meses hasta normalizar; VDRL persistente obliga a retratamiento', 'C) Cada 3 meses de por vida', 'D) Únicamente al año'], answer: 'B' },
+        { id: 19, question: 'Para el seguimiento serológico, se recomienda usar:', options: ['A) Alternar entre RPR y VDRL', 'B) Pruebas rápidas cualitativas', 'C) La misma prueba no treponémica con la que se inició seguimiento', 'D) Solo pruebas treponémicas'], answer: 'C' },
+        { id: 20, question: '¿Cuál de los siguientes escenarios define un CASO PROBABLE de sífilis congénita según la guía?', options: ['A) RN con pruebas negativas y sin clínica', 'B) RN de madre adecuadamente tratada >30 días antes del parto sin datos clínicos', 'C) RN de madre no tratada o tratada inadecuadamente al parto, independientemente de hallazgos clínicos', 'D) Niño con FTA IgM negativa y sin clínica'], answer: 'C' },
+        { id: 21, question: '¿Cuál corresponde a CASO CONFIRMADO de sífilis congénita?', options: ['A) RN de madre reactiva sin hallazgos', 'B) Cualquier RN con VDRL positivo aislado', 'C) RN con títulos 2 veces mayores que la madre', 'D) Manifestaciones específicas y FTA IgM positiva o identificación de Treponema por campo oscuro/inmunofluorescencia'], answer: 'D' },
+        { id: 22, question: '¿Qué define un CASO ANULADO en esta guía?', options: ['A) RN con IgM positiva pero sin clínica', 'B) Niño con PCR en LCR positiva', 'C) RN con radiografías anormales', 'D) Antecedente materno de pruebas positivas pero RN sin clínica específica y con pruebas negativas'], answer: 'D' },
+        { id: 23, question: 'En la clasificación de casos, el ÓBITO POR SÍFILIS corresponde a:', options: ['A) Muerte fetal <20 semanas por causa desconocida', 'B) Óbito con madre adecuadamente tratada', 'C) Cualquier muerte neonatal por sepsis', 'D) Muerte fetal ≥500 g o ≥20 semanas con madre no tratada o tratada inadecuadamente'], answer: 'D' },
+        { id: 24, question: 'En esta guía, ¿qué intervalo define RECIÉN NACIDO (RN)?', options: ['A) 1–30 días', 'B) 0–14 días', 'C) 0–7 días', 'D) 0–28 días'], answer: 'D' },
+        { id: 25, question: 'Según la guía, ¿qué intervalo define LACTANTE?', options: ['A) 1–12 meses', 'B) 1–24 meses', 'C) 0–12 meses', 'D) 2–18 meses'], answer: 'B' },
+        { id: 26, question: 'Según la guía, ¿qué intervalo define NIÑO (para esta guía)?', options: ['A) 3–10 años', 'B) 1–5 años', 'C) 2–18 años', 'D) 2–12 años'], answer: 'C' },
+        { id: 27, question: 'La manifestación «trombocitopenia» corresponde típicamente a:', options: ['A) No se relaciona con sífilis congénita', 'B) Sífilis congénita tardía', 'C) Solo en sífilis adquirida del adulto', 'D) Sífilis congénita temprana'], answer: 'D' },
+        { id: 28, question: 'La manifestación «fisuras periorales» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) Solo en sífilis adquirida del adulto', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita tardía'], answer: 'A' },
+        { id: 29, question: 'La manifestación «linfadenopatía generalizada» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) Solo en sífilis adquirida del adulto', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita tardía'], answer: 'A' },
+        { id: 30, question: 'La manifestación «osteocondritis» corresponde típicamente a:', options: ['A) No se relaciona con sífilis congénita', 'B) Solo en sífilis adquirida del adulto', 'C) Sífilis congénita tardía', 'D) Sífilis congénita temprana'], answer: 'D' },
+        { id: 31, question: 'La manifestación «hemólisis» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) Sífilis congénita tardía', 'C) No se relaciona con sífilis congénita', 'D) Solo en sífilis adquirida del adulto'], answer: 'A' },
+        { id: 32, question: 'La manifestación «periostitis» corresponde típicamente a:', options: ['A) Solo en sífilis adquirida del adulto', 'B) No se relaciona con sífilis congénita', 'C) Sífilis congénita temprana', 'D) Sífilis congénita tardía'], answer: 'C' },
+        { id: 33, question: 'La manifestación «afección neurológica» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) Solo en sífilis adquirida del adulto', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita temprana'], answer: 'D' },
+        { id: 34, question: 'La manifestación «afección ocular» corresponde típicamente a:', options: ['A) No se relaciona con sífilis congénita', 'B) Solo en sífilis adquirida del adulto', 'C) Sífilis congénita temprana', 'D) Sífilis congénita tardía'], answer: 'C' },
+        { id: 35, question: 'La manifestación «pseudoparálisis» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) No se relaciona con sífilis congénita', 'C) Solo en sífilis adquirida del adulto', 'D) Sífilis congénita tardía'], answer: 'A' },
+        { id: 36, question: 'La manifestación «úlceras mucosas» corresponde típicamente a:', options: ['A) Solo en sífilis adquirida del adulto', 'B) Sífilis congénita tardía', 'C) Sífilis congénita temprana', 'D) No se relaciona con sífilis congénita'], answer: 'C' },
+        { id: 37, question: 'La manifestación «hepatoesplenomegalia» corresponde típicamente a:', options: ['A) Solo en sífilis adquirida del adulto', 'B) Sífilis congénita tardía', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita temprana'], answer: 'D' },
+        { id: 38, question: 'La manifestación «condiloma lata» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) Sífilis congénita temprana', 'C) No se relaciona con sífilis congénita', 'D) Solo en sífilis adquirida del adulto'], answer: 'B' },
+        { id: 39, question: 'La manifestación «facies sifilítica» corresponde típicamente a:', options: ['A) Solo en sífilis secundaria adquirida', 'B) Sífilis congénita tardía', 'C) Sífilis congénita temprana', 'D) No se relaciona con sífilis congénita'], answer: 'B' },
+        { id: 40, question: 'La manifestación «dientes de Hutchinson» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) No se relaciona con sífilis congénita', 'C) Sífilis congénita temprana', 'D) Solo en sífilis secundaria adquirida'], answer: 'A' },
+        { id: 41, question: 'La manifestación «sordera» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) Sífilis congénita tardía', 'C) Solo en sífilis secundaria adquirida', 'D) No se relaciona con sífilis congénita'], answer: 'B' },
+        { id: 42, question: 'La manifestación «articulaciones de Clutton» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) Solo en sífilis secundaria adquirida', 'C) Sífilis congénita temprana', 'D) No se relaciona con sífilis congénita'], answer: 'A' },
+        { id: 43, question: 'La manifestación «ensanchamiento tercio interno clavicular (signo de Higoumenakis)» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) Solo en sífilis secundaria adquirida', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita temprana'], answer: 'A' },
+        { id: 44, question: 'La manifestación «nariz en silla de montar» corresponde típicamente a:', options: ['A) Solo en sífilis secundaria adquirida', 'B) Sífilis congénita tardía', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita temprana'], answer: 'B' },
+        { id: 45, question: 'La manifestación «protuberancia de mandíbula» corresponde típicamente a:', options: ['A) Sífilis congénita temprana', 'B) Solo en sífilis secundaria adquirida', 'C) Sífilis congénita tardía', 'D) No se relaciona con sífilis congénita'], answer: 'C' },
+        { id: 46, question: 'La manifestación «molares en mora» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) No se relaciona con sífilis congénita', 'C) Sífilis congénita temprana', 'D) Solo en sífilis secundaria adquirida'], answer: 'A' },
+        { id: 47, question: 'La manifestación «frontal prominente» corresponde típicamente a:', options: ['A) No se relaciona con sífilis congénita', 'B) Solo en sífilis secundaria adquirida', 'C) Sífilis congénita temprana', 'D) Sífilis congénita tardía'], answer: 'D' },
+        { id: 48, question: 'La manifestación «tibia en sable» corresponde típicamente a:', options: ['A) Solo en sífilis secundaria adquirida', 'B) Sífilis congénita tardía', 'C) Sífilis congénita temprana', 'D) No se relaciona con sífilis congénita'], answer: 'B' },
+        { id: 49, question: 'La manifestación «maxilar corto» corresponde típicamente a:', options: ['A) Solo en sífilis secundaria adquirida', 'B) Sífilis congénita tardía', 'C) No se relaciona con sífilis congénita', 'D) Sífilis congénita temprana'], answer: 'B' },
+        { id: 50, question: 'La manifestación «gomas» corresponde típicamente a:', options: ['A) Sífilis congénita tardía', 'B) Sífilis congénita temprana', 'C) No se relaciona con sífilis congénita', 'D) Solo en sífilis secundaria adquirida'], answer: 'A' },
+        { id: 51, question: '¿Cuál de las siguientes NO es típica de la sífilis congénita TEMPRANA?', options: ['A) Osteocondritis', 'B) Rinitis hemorrágica', 'C) Dientes de Hutchinson', 'D) Exantema'], answer: 'C' },
+        { id: 52, question: '¿Cuál de las siguientes NO es típica de la sífilis congénita TARDÍA?', options: ['A) Querartitis intersticial', 'B) Articulaciones de Clutton', 'C) Tibia en sable', 'D) Hydrops no inmune'], answer: 'D' },
+        { id: 53, question: 'El «signo de Wimberger» se describe como:', options: ['A) Desmineralización y destrucción de la metáfisis proximal de la tibia', 'B) Afectación exclusiva de huesos del carpo', 'C) Bandas lineales radiodensas y traslúcidas en diáfisis', 'D) Erosión subcondral del fémur distal'], answer: 'A' },
+        { id: 54, question: 'Las «bandas lineales alternantes radiodensas y traslúcidas» (tallo de apio) corresponden a:', options: ['A) Raquitismo activo', 'B) Osteítis en sífilis congénita', 'C) Osteogénesis imperfecta', 'D) Encondromatosis'], answer: 'B' },
+        { id: 55, question: '¿Cuál de los siguientes es un dato radiológico frecuente en sífilis congénita?', options: ['A) Lesiones simétricas en huesos largos (más en extremidades inferiores)', 'B) Compromiso aislado de clavícula', 'C) Lesiones exclusivamente en columna lumbar', 'D) Afectación predominante de huesos del cráneo'], answer: 'A' },
+        { id: 56, question: 'En casos no tratados, para evaluar anormalidad ósea es útil radiografiar principalmente:', options: ['A) Hombros y esternón', 'B) Pelvis y columna cervical', 'C) Columna torácica y sacro', 'D) Muñecas y extremidades inferiores'], answer: 'D' },
+        { id: 57, question: 'Las articulaciones MÁS afectadas por osteocondritis en sífilis congénita son:', options: ['A) Rodillas, tobillos, muñecas y codos', 'B) Caderas, hombros, interfalángicas distales y sacroilíacas', 'C) Temporomandibulares únicamente', 'D) Esternoclaviculares exclusivamente'], answer: 'A' },
+        { id: 58, question: 'Para lactantes y niños con NEUROSÍFILIS, la guía recomienda:', options: ['A) Eritromicina por 10 días', 'B) Penicilina benzatínica 50,000 U/kg IM dosis única', 'C) Ceftriaxona oral por 7 días', 'D) Penicilina G cristalina 200,000–300,000 U/kg/día IV (cada 6 h) por 14 días'], answer: 'D' },
+        { id: 59, question: 'En niños ≥4 semanas de vida (sin neurosífilis), un esquema recomendado es:', options: ['A) Penicilina G sódica cristalina IV cada 6 horas por 14 días', 'B) Azitromicina en dosis única', 'C) Penicilina benzatínica IM semanal por 3 semanas', 'D) Doxiciclina por 14 días'], answer: 'A' },
+        { id: 60, question: 'En RN asintomáticos de ALTO RIESGO con seguimiento garantizado, puede considerarse:', options: ['A) Penicilina G benzatínica 50,000 U/kg IM en dosis única', 'B) Eritromicina 40 mg/kg/día por 14 días', 'C) Dosis única de penicilina procaínica 50,000 U/kg IV', 'D) No tratar y solo vigilar'], answer: 'A' },
+        { id: 61, question: 'En RN asintomáticos de ALTO RIESGO SIN seguimiento garantizado, se prefiere:', options: ['A) Retrasar el tratamiento hasta la primera cita', 'B) Régimen completo con penicilina G cristalina antes del egreso', 'C) Observación domiciliaria', 'D) Dosis única de benzatínica y alta'], answer: 'B' },
+        { id: 62, question: '¿Cuándo se recomienda AISLAMIENTO DE GOTA en sífilis congénita?', options: ['A) Nunca es necesario el aislamiento de gota', 'B) Ante pénfigo palmoplantar o rinitis sanguinolenta', 'C) Siempre, por 7 días pese a no tener lesiones', 'D) Solo si hay neurosífilis'], answer: 'B' },
+        { id: 63, question: 'Una vez confirmado el diagnóstico con compromiso sistémico significativo, el paciente debe:', options: ['A) Recibir solo vigilancia telefónica', 'B) Referirse directamente a tercer nivel sin tratamiento', 'C) Hospitalizarse (cuidado intermedio o UCI según compromiso) para monitorización estricta', 'D) Manejarse exclusivamente ambulatorio'], answer: 'C' },
+        { id: 64, question: 'Ante sospecha por antecedentes o hallazgos, el primer contacto debe:', options: ['A) Derivar a consulta general sin urgencia', 'B) Solicitar solo pruebas treponémicas en primer nivel', 'C) Esperar a que aparezcan lesiones', 'D) Referir a hospital de segundo nivel con pediatra/infectólogo y laboratorio para pruebas no treponémicas'], answer: 'D' },
+        { id: 65, question: 'En una tabla madre-hijo, el patrón (+ madre, + hijo) para pruebas treponémicas y no treponémicas sugiere:', options: ['A) Falso positivo obligado', 'B) Exclusión definitiva de infección', 'C) Infección sifilítica (interpretación clínica según contexto)', 'D) Prueba inválida por sangre de cordón'], answer: 'C' },
+        { id: 66, question: 'En menores de 6 meses NO tratados, una prueba no treponémica NO reactiva permite:', options: ['A) Confirmarla', 'B) Indicar tratamiento de refuerzo', 'C) Diagnosticar neurosífilis', 'D) Excluir sífilis congénita'], answer: 'D' },
+        { id: 67, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Son preferibles para cuantificar descenso de títulos', 'B) Se negativizan a los 6 meses', 'C) Solo se usan si RPR fue negativo al inicio', 'D) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida'], answer: 'D' },
+        { id: 68, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Sífilis', 'B) Falso positivo por anticuerpos maternos', 'C) Ausencia de infección congénita', 'D) Solo reinfección posnatal'], answer: 'A' },
+        { id: 69, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Irrelevante', 'B) Solo necesario si hubo neurosífilis', 'C) Desaconsejado por variabilidad', 'D) Recomendado para comparar adecuadamente los títulos'], answer: 'D' },
+        { id: 70, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Estabilidad sin cambios', 'B) Disminución de títulos VDRL hasta 4 veces', 'C) Aumento de 2 diluciones', 'D) Negativización inmediata al mes'], answer: 'B' },
+        { id: 71, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Metacarpo, metatarso y falanges proximales', 'B) Húmero proximal y escápula', 'C) Radio y cúbito', 'D) Falanges distales exclusivamente'], answer: 'A' },
+        { id: 72, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Unifocales y asimétricas', 'B) Múltiples y simétricas', 'C) Limitadas al esqueleto axial', 'D) Exclusivas del fémur'], answer: 'B' },
+        { id: 73, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Radiografías de muñecas y extremidades inferiores', 'B) Resonancia lumbar de rutina', 'C) Tomografía de cráneo como primer estudio', 'D) Ultrasonido de hombros y clavículas'], answer: 'A' },
+        { id: 74, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Motivo para diferir el tratamiento', 'B) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'C) Criterio solo para adultos', 'D) Irrelevante para la decisión terapéutica'], answer: 'B' },
+        { id: 75, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Considerar retratamiento', 'B) Asumir curación completa', 'C) Cambiar a pruebas treponémicas', 'D) Suspender seguimientos'], answer: 'A' },
+        { id: 76, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) Descenso de 1 dilución en 6 meses', 'B) IgM negativa en suero', 'C) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'D) Títulos estables a 3 meses'], answer: 'C' },
+        { id: 77, question: 'Seleccione la opción que MEJOR clasifica «hepatoesplenomegalia»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 78, question: 'Seleccione la opción que MEJOR clasifica «rinitis hemorrágica»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) No se relaciona con sífilis'], answer: 'A' },
+        { id: 79, question: 'Seleccione la opción que MEJOR clasifica «afección ocular»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'C' },
+        { id: 80, question: 'Seleccione la opción que MEJOR clasifica «exantema»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) No se relaciona con sífilis'], answer: 'A' },
+        { id: 81, question: 'Seleccione la opción que MEJOR clasifica «hemólisis»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita tardía'], answer: 'A' },
+        { id: 82, question: 'Seleccione la opción que MEJOR clasifica «articulaciones de Clutton»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) No se relaciona con sífilis'], answer: 'C' },
+        { id: 83, question: 'Seleccione la opción que MEJOR clasifica «protuberancia de mandíbula»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 84, question: 'Seleccione la opción que MEJOR clasifica «ensanchamiento tercio interno clavicular (signo de Higoumenakis)»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Manifestación de sífilis congénita tardía', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 85, question: 'Seleccione la opción que MEJOR clasifica «ragadías»:', options: ['A) Complicación exclusiva del tratamiento', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' }, // Note: Ragadias is classic early, but the key says D. Sticking to key.
+        { id: 86, question: 'Seleccione la opción que MEJOR clasifica «gomas»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita tardía', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'B' },
+        { id: 87, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Solo se usan si RPR fue negativo al inicio', 'B) Son preferibles para cuantificar descenso de títulos', 'C) Se negativizan a los 6 meses', 'D) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida'], answer: 'D' },
+        { id: 88, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Ausencia de infección congénita', 'B) Falso positivo por anticuerpos maternos', 'C) Solo reinfección posnatal', 'D) Sífilis'], answer: 'D' },
+        { id: 89, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Desaconsejado por variabilidad', 'B) Solo necesario si hubo neurosífilis', 'C) Irrelevante', 'D) Recomendado para comparar adecuadamente los títulos'], answer: 'D' },
+        { id: 90, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Disminución de títulos VDRL hasta 4 veces', 'B) Negativización inmediata al mes', 'C) Aumento de 2 diluciones', 'D) Estabilidad sin cambios'], answer: 'A' },
+        { id: 91, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Radio y cúbito', 'B) Metacarpo, metatarso y falanges proximales', 'C) Falanges distales exclusivamente', 'D) Húmero proximal y escápula'], answer: 'B' },
+        { id: 92, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Limitadas al esqueleto axial', 'B) Múltiples y simétricas', 'C) Unifocales y asimétricas', 'D) Exclusivas del fémur'], answer: 'B' },
+        { id: 93, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Resonancia lumbar de rutina', 'B) Tomografía de cráneo como primer estudio', 'C) Radiografías de muñecas y extremidades inferiores', 'D) Ultrasonido de hombros y clavículas'], answer: 'C' },
+        { id: 94, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Irrelevante para la decisión terapéutica', 'B) Motivo para diferir el tratamiento', 'C) Criterio solo para adultos', 'D) Un factor clave para elegir entre régimen completo o dosis única de benzatínica'], answer: 'D' },
+        { id: 95, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Asumir curación completa', 'B) Suspender seguimientos', 'C) Cambiar a pruebas treponémicas', 'D) Considerar retratamiento'], answer: 'D' },
+        { id: 96, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'B) Títulos estables a 3 meses', 'C) Descenso de 1 dilución en 6 meses', 'D) IgM negativa en suero'], answer: 'A' },
+        { id: 97, question: 'Seleccione la opción que MEJOR clasifica «afección neurológica»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'A' },
+        { id: 98, question: 'Seleccione la opción que MEJOR clasifica «hepatoesplenomegalia»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita temprana', 'D) No se relaciona con sífilis'], answer: 'C' },
+        { id: 99, question: 'Seleccione la opción que MEJOR clasifica «hemólisis»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita tardía', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 100, question: 'Seleccione la opción que MEJOR clasifica «linfadenopatía generalizada»:', options: ['A) Complicación exclusiva del tratamiento', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Manifestación de sífilis congénita tardía'], answer: 'C' },
+        { id: 101, question: 'Seleccione la opción que MEJOR clasifica «fisuras periorales»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 102, question: 'Seleccione la opción que MEJOR clasifica «nariz en silla de montar»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) Manifestación de sífilis congénita temprana'], answer: 'C' },
+        { id: 103, question: 'Seleccione la opción que MEJOR clasifica «protuberancia de mandíbula»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 104, question: 'Seleccione la opción que MEJOR clasifica «sordera»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) Manifestación de sífilis congénita temprana'], answer: 'C' },
+        { id: 105, question: 'Seleccione la opción que MEJOR clasifica «frontal prominente»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 106, question: 'Seleccione la opción que MEJOR clasifica «tibia en sable»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita tardía', 'C) Manifestación de sífilis congénita temprana', 'D) No se relaciona con sífilis'], answer: 'B' },
+        { id: 107, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Se negativizan a los 6 meses', 'B) Son preferibles para cuantificar descenso de títulos', 'C) Solo se usan si RPR fue negativo al inicio', 'D) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida'], answer: 'D' },
+        { id: 108, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Falso positivo por anticuerpos maternos', 'B) Solo reinfección posnatal', 'C) Sífilis', 'D) Ausencia de infección congénita'], answer: 'C' },
+        { id: 109, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Desaconsejado por variabilidad', 'B) Irrelevante', 'C) Solo necesario si hubo neurosífilis', 'D) Recomendado para comparar adecuadamente los títulos'], answer: 'D' },
+        { id: 110, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Aumento de 2 diluciones', 'B) Estabilidad sin cambios', 'C) Disminución de títulos VDRL hasta 4 veces', 'D) Negativización inmediata al mes'], answer: 'C' },
+        { id: 111, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Falanges distales exclusivamente', 'B) Metacarpo, metatarso y falanges proximales', 'C) Húmero proximal y escápula', 'D) Radio y cúbito'], answer: 'B' },
+        { id: 112, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Limitadas al esqueleto axial', 'B) Múltiples y simétricas', 'C) Exclusivas del fémur', 'D) Unifocales y asimétricas'], answer: 'B' },
+        { id: 113, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Radiografías de muñecas y extremidades inferiores', 'B) Tomografía de cráneo como primer estudio', 'C) Ultrasonido de hombros y clavículas', 'D) Resonancia lumbar de rutina'], answer: 'A' },
+        { id: 114, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Irrelevante para la decisión terapéutica', 'B) Motivo para diferir el tratamiento', 'C) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'D) Criterio solo para adultos'], answer: 'C' },
+        { id: 115, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Suspender seguimientos', 'B) Cambiar a pruebas treponémicas', 'C) Asumir curación completa', 'D) Considerar retratamiento'], answer: 'D' },
+        { id: 116, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) Descenso de 1 dilución en 6 meses', 'B) Títulos estables a 3 meses', 'C) IgM negativa en suero', 'D) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero'], answer: 'D' },
+        { id: 117, question: 'Seleccione la opción que MEJOR clasifica «condiloma lata»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 118, question: 'Seleccione la opción que MEJOR clasifica «afección ocular»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'A' },
+        { id: 119, question: 'Seleccione la opción que MEJOR clasifica «hepatoesplenomegalia»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita tardía', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 120, question: 'Seleccione la opción que MEJOR clasifica «pseudoparálisis»:', options: ['A) Complicación exclusiva del tratamiento', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Manifestación de sífilis congénita tardía'], answer: 'C' },
+        { id: 121, question: 'Seleccione la opción que MEJOR clasifica «afección neurológica»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita tardía'], answer: 'A' },
+        { id: 122, question: 'Seleccione la opción que MEJOR clasifica «nariz en silla de montar»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Manifestación de sífilis congénita tardía', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 123, question: 'Seleccione la opción que MEJOR clasifica «molares en mora»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 124, question: 'Seleccione la opción que MEJOR clasifica «ensanchamiento tercio interno clavicular (signo de Higoumenakis)»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) No se relaciona con sífilis'], answer: 'C' },
+        { id: 125, question: 'Seleccione la opción que MEJOR clasifica «sordera»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 126, question: 'Seleccione la opción que MEJOR clasifica «queratitis intersticial»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 127, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Son preferibles para cuantificar descenso de títulos', 'B) Se negativizan a los 6 meses', 'C) Solo se usan si RPR fue negativo al inicio', 'D) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida'], answer: 'D' },
+        { id: 128, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Sífilis', 'B) Solo reinfección posnatal', 'C) Falso positivo por anticuerpos maternos', 'D) Ausencia de infección congénita'], answer: 'A' },
+        { id: 129, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Recomendado para comparar adecuadamente los títulos', 'B) Desaconsejado por variabilidad', 'C) Solo necesario si hubo neurosífilis', 'D) Irrelevante'], answer: 'A' },
+        { id: 130, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Estabilidad sin cambios', 'B) Negativización inmediata al mes', 'C) Disminución de títulos VDRL hasta 4 veces', 'D) Aumento de 2 diluciones'], answer: 'C' },
+        { id: 131, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Falanges distales exclusivamente', 'B) Radio y cúbito', 'C) Metacarpo, metatarso y falanges proximales', 'D) Húmero proximal y escápula'], answer: 'C' },
+        { id: 132, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Limitadas al esqueleto axial', 'B) Múltiples y simétricas', 'C) Unifocales y asimétricas', 'D) Exclusivas del fémur'], answer: 'B' },
+        { id: 133, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Radiografías de muñecas y extremidades inferiores', 'B) Ultrasonido de hombros y clavículas', 'C) Tomografía de cráneo como primer estudio', 'D) Resonancia lumbar de rutina'], answer: 'A' },
+        { id: 134, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Irrelevante para la decisión terapéutica', 'B) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'C) Motivo para diferir el tratamiento', 'D) Criterio solo para adultos'], answer: 'B' },
+        { id: 135, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Cambiar a pruebas treponémicas', 'B) Suspender seguimientos', 'C) Asumir curación completa', 'D) Considerar retratamiento'], answer: 'D' },
+        { id: 136, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) IgM negativa en suero', 'B) Descenso de 1 dilución en 6 meses', 'C) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'D) Títulos estables a 3 meses'], answer: 'C' },
+        { id: 137, question: 'Seleccione la opción que MEJOR clasifica «afección ocular»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 138, question: 'Seleccione la opción que MEJOR clasifica «condiloma lata»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'A' },
+        { id: 139, question: 'Seleccione la opción que MEJOR clasifica «hemólisis»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'C' },
+        { id: 140, question: 'Seleccione la opción que MEJOR clasifica «hydrops no inmune»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita tardía', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 141, question: 'Seleccione la opción que MEJOR clasifica «lesiones vesiculobulosas»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 142, question: 'Seleccione la opción que MEJOR clasifica «frontal prominente»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita tardía', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 143, question: 'Seleccione la opción que MEJOR clasifica «facies sifilítica»:', options: ['A) Complicación exclusiva del tratamiento', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 144, question: 'Seleccione la opción que MEJOR clasifica «nariz en silla de montar»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 145, question: 'Seleccione la opción que MEJOR clasifica «dientes de Hutchinson»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 146, question: 'Seleccione la opción que MEJOR clasifica «molares en mora»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Manifestación de sífilis congénita tardía', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 147, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida', 'B) Son preferibles para cuantificar descenso de títulos', 'C) Se negativizan a los 6 meses', 'D) Solo se usan si RPR fue negativo al inicio'], answer: 'A' },
+        { id: 148, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Sífilis', 'B) Solo reinfección posnatal', 'C) Ausencia de infección congénita', 'D) Falso positivo por anticuerpos maternos'], answer: 'A' },
+        { id: 149, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Irrelevante', 'B) Solo necesario si hubo neurosífilis', 'C) Desaconsejado por variabilidad', 'D) Recomendado para comparar adecuadamente los títulos'], answer: 'D' },
+        { id: 150, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Aumento de 2 diluciones', 'B) Disminución de títulos VDRL hasta 4 veces', 'C) Negativización inmediata al mes', 'D) Estabilidad sin cambios'], answer: 'B' },
+        { id: 151, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Húmero proximal y escápula', 'B) Falanges distales exclusivamente', 'C) Radio y cúbito', 'D) Metacarpo, metatarso y falanges proximales'], answer: 'D' },
+        { id: 152, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Limitadas al esqueleto axial', 'B) Exclusivas del fémur', 'C) Múltiples y simétricas', 'D) Unifocales y asimétricas'], answer: 'C' },
+        { id: 153, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Tomografía de cráneo como primer estudio', 'B) Resonancia lumbar de rutina', 'C) Ultrasonido de hombros y clavículas', 'D) Radiografías de muñecas y extremidades inferiores'], answer: 'D' },
+        { id: 154, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Irrelevante para la decisión terapéutica', 'B) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'C) Motivo para diferir el tratamiento', 'D) Criterio solo para adultos'], answer: 'B' },
+        { id: 155, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Suspender seguimientos', 'B) Considerar retratamiento', 'C) Asumir curación completa', 'D) Cambiar a pruebas treponémicas'], answer: 'B' },
+        { id: 156, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) Títulos estables a 3 meses', 'B) Descenso de 1 dilución en 6 meses', 'C) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'D) IgM negativa en suero'], answer: 'C' },
+        { id: 157, question: 'Seleccione la opción que MEJOR clasifica «condiloma lata»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 158, question: 'Seleccione la opción que MEJOR clasifica «glomerulonefritis»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita temprana', 'C) Manifestación de sífilis congénita tardía', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 159, question: 'Seleccione la opción que MEJOR clasifica «osteocondritis»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita tardía', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 160, question: 'Seleccione la opción que MEJOR clasifica «afección ocular»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) Complicación exclusiva del tratamiento', 'D) No se relaciona con sífilis'], answer: 'B' },
+        { id: 161, question: 'Seleccione la opción que MEJOR clasifica «periostitis»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita temprana', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'B' },
+        { id: 162, question: 'Seleccione la opción que MEJOR clasifica «dientes de Hutchinson»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 163, question: 'Seleccione la opción que MEJOR clasifica «hemoglobinuria paroxística fría»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'A' },
+        { id: 164, question: 'Seleccione la opción que MEJOR clasifica «queratitis intersticial»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita tardía', 'C) Manifestación de sífilis congénita temprana', 'D) No se relaciona con sífilis'], answer: 'B' },
+        { id: 165, question: 'Seleccione la opción que MEJOR clasifica «ensanchamiento tercio interno clavicular (signo de Higoumenakis)»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Manifestación de sífilis congénita temprana', 'C) Complicación exclusiva del tratamiento', 'D) No se relaciona con sífilis'], answer: 'A' },
+        { id: 166, question: 'Seleccione la opción que MEJOR clasifica «articulaciones de Clutton»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita temprana'], answer: 'A' },
+        { id: 167, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Se negativizan a los 6 meses', 'B) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida', 'C) Solo se usan si RPR fue negativo al inicio', 'D) Son preferibles para cuantificar descenso de títulos'], answer: 'B' },
+        { id: 168, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Solo reinfección posnatal', 'B) Sífilis', 'C) Falso positivo por anticuerpos maternos', 'D) Ausencia de infección congénita'], answer: 'B' },
+        { id: 169, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Irrelevante', 'B) Desaconsejado por variabilidad', 'C) Solo necesario si hubo neurosífilis', 'D) Recomendado para comparar adecuadamente los títulos'], answer: 'D' },
+        { id: 170, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Estabilidad sin cambios', 'B) Aumento de 2 diluciones', 'C) Negativización inmediata al mes', 'D) Disminución de títulos VDRL hasta 4 veces'], answer: 'D' },
+        { id: 171, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Radio y cúbito', 'B) Falanges distales exclusivamente', 'C) Húmero proximal y escápula', 'D) Metacarpo, metatarso y falanges proximales'], answer: 'D' },
+        { id: 172, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Exclusivas del fémur', 'B) Múltiples y simétricas', 'C) Limitadas al esqueleto axial', 'D) Unifocales y asimétricas'], answer: 'B' },
+        { id: 173, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Ultrasonido de hombros y clavículas', 'B) Resonancia lumbar de rutina', 'C) Tomografía de cráneo como primer estudio', 'D) Radiografías de muñecas y extremidades inferiores'], answer: 'D' },
+        { id: 174, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Motivo para diferir el tratamiento', 'B) Irrelevante para la decisión terapéutica', 'C) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'D) Criterio solo para adultos'], answer: 'C' },
+        { id: 175, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Cambiar a pruebas treponémicas', 'B) Asumir curación completa', 'C) Suspender seguimientos', 'D) Considerar retratamiento'], answer: 'D' },
+        { id: 176, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) IgM negativa en suero', 'B) Títulos estables a 3 meses', 'C) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'D) Descenso de 1 dilución en 6 meses'], answer: 'C' },
+        { id: 177, question: 'Seleccione la opción que MEJOR clasifica «exantema»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Complicación exclusiva del tratamiento', 'D) Manifestación de sífilis congénita tardía'], answer: 'A' },
+        { id: 178, question: 'Seleccione la opción que MEJOR clasifica «glomerulonefritis»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'C' },
+        { id: 179, question: 'Seleccione la opción que MEJOR clasifica «fisuras periorales»:', options: ['A) No se relaciona con sífilis', 'B) Complicación exclusiva del tratamiento', 'C) Manifestación de sífilis congénita temprana', 'D) Manifestación de sífilis congénita tardía'], answer: 'C' },
+        { id: 180, question: 'Seleccione la opción que MEJOR clasifica «periostitis»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita tardía', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 181, question: 'Seleccione la opción que MEJOR clasifica «pseudoparálisis»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita tardía', 'C) Manifestación de sífilis congénita temprana', 'D) No se relaciona con sífilis'], answer: 'C' },
+        { id: 182, question: 'Seleccione la opción que MEJOR clasifica «sordera»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita temprana', 'C) Manifestación de sífilis congénita tardía', 'D) No se relaciona con sífilis'], answer: 'C' },
+        { id: 183, question: 'Seleccione la opción que MEJOR clasifica «frontal prominente»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) Manifestación de sífilis congénita tardía', 'C) No se relaciona con sífilis', 'D) Complicación exclusiva del tratamiento'], answer: 'B' },
+        { id: 184, question: 'Seleccione la opción que MEJOR clasifica «maxilar corto»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita temprana', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita tardía'], answer: 'D' },
+        { id: 185, question: 'Seleccione la opción que MEJOR clasifica «hemoglobinuria paroxística fría»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita temprana'], answer: 'A' },
+        { id: 186, question: 'Seleccione la opción que MEJOR clasifica «ensanchamiento tercio interno clavicular (signo de Higoumenakis)»:', options: ['A) Complicación exclusiva del tratamiento', 'B) Manifestación de sífilis congénita tardía', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita temprana'], answer: 'B' },
+        { id: 187, question: '¿Cuál de las siguientes afirmaciones es CORRECTA respecto a las pruebas treponémicas en el seguimiento del RN?', options: ['A) Solo se usan si RPR fue negativo al inicio', 'B) No se deben utilizar para seguimiento; pueden permanecer positivas de por vida', 'C) Son preferibles para cuantificar descenso de títulos', 'D) Se negativizan a los 6 meses'], answer: 'B' },
+        { id: 188, question: 'Una prueba treponémica positiva después del mes 18 de vida en el niño confirma:', options: ['A) Falso positivo por anticuerpos maternos', 'B) Ausencia de infección congénita', 'C) Solo reinfección posnatal', 'D) Sífilis'], answer: 'D' },
+        { id: 189, question: 'El uso de la MISMA prueba no treponémica a lo largo del seguimiento es:', options: ['A) Recomendado para comparar adecuadamente los títulos', 'B) Solo necesario si hubo neurosífilis', 'C) Irrelevante', 'D) Desaconsejado por variabilidad'], answer: 'A' },
+        { id: 190, question: 'En seguimiento, ¿qué cambio serológico se espera a los 6 meses tras tratamiento eficaz?', options: ['A) Aumento de 2 diluciones', 'B) Disminución de títulos VDRL hasta 4 veces', 'C) Negativización inmediata al mes', 'D) Estabilidad sin cambios'], answer: 'B' },
+        { id: 191, question: 'La dactilitis sifilítica compromete con mayor frecuencia:', options: ['A) Metacarpo, metatarso y falanges proximales', 'B) Radio y cúbito', 'C) Falanges distales exclusivamente', 'D) Húmero proximal y escápula'], answer: 'A' },
+        { id: 192, question: 'Las lesiones óseas de la sífilis congénita temprana son con mayor frecuencia:', options: ['A) Múltiples y simétricas', 'B) Unifocales y asimétricas', 'C) Exclusivas del fémur', 'D) Limitadas al esqueleto axial'], answer: 'A' },
+        { id: 193, question: 'Para sospecha de compromiso óseo en el lactante, una estrategia útil de imagen incluye:', options: ['A) Radiografías de muñecas y extremidades inferiores', 'B) Ultrasonido de hombros y clavículas', 'C) Resonancia lumbar de rutina', 'D) Tomografía de cráneo como primer estudio'], answer: 'A' },
+        { id: 194, question: 'La certeza de un SEGUIMIENTO ADECUADO del RN es:', options: ['A) Criterio solo para adultos', 'B) Motivo para diferir el tratamiento', 'C) Un factor clave para elegir entre régimen completo o dosis única de benzatínica', 'D) Irrelevante para la decisión terapéutica'], answer: 'C' },
+        { id: 195, question: 'Si los títulos no treponémicos NO disminuyen al menos 4 veces a los 12 meses, se debe:', options: ['A) Cambiar a pruebas treponémicas', 'B) Suspender seguimientos', 'C) Asumir curación completa', 'D) Considerar retratamiento'], answer: 'D' },
+        { id: 196, question: 'La indicación de retratamiento durante el seguimiento se asocia a:', options: ['A) Títulos estables a 3 meses', 'B) IgM negativa en suero', 'C) Persistencia de VDRL positivo en LCR o aumento cuádruple en suero', 'D) Descenso de 1 dilución en 6 meses'], answer: 'C' },
+        { id: 197, question: 'Seleccione la opción que MEJOR clasifica «hepatoesplenomegalia»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) Complicación exclusiva del tratamiento', 'C) No se relaciona con sífilis', 'D) Manifestación de sífilis congénita temprana'], answer: 'D' },
+        { id: 198, question: 'Seleccione la opción que MEJOR clasifica «afección neurológica»:', options: ['A) Manifestación de sífilis congénita temprana', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita tardía', 'D) Complicación exclusiva del tratamiento'], answer: 'A' },
+        { id: 199, question: 'Seleccione la opción que MEJOR clasifica «rinitis hemorrágica»:', options: ['A) No se relaciona con sífilis', 'B) Manifestación de sífilis congénita tardía', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'C' },
+        { id: 200, question: 'Seleccione la opción que MEJOR clasifica «glomerulonefritis»:', options: ['A) Manifestación de sífilis congénita tardía', 'B) No se relaciona con sífilis', 'C) Manifestación de sífilis congénita temprana', 'D) Complicación exclusiva del tratamiento'], answer: 'C' },
+    ];
+
+
+    // --- APPLICATION LOGIC ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const configScreen = document.getElementById('config-screen');
+        const practiceScreen = document.getElementById('practice-screen');
+        const resultsScreen = document.getElementById('results-screen');
+
+        const questionSetSelect = document.getElementById('question-set');
+        const blockSizeContainer = document.getElementById('block-size-container');
+        
+        let currentSessionQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = {}; // Stores user answers by question ID
+        let sessionConfig = {};
+
+        // --- Event Listeners ---
+        questionSetSelect.addEventListener('change', () => {
+            blockSizeContainer.style.display = questionSetSelect.value === 'blocks' ? 'block' : 'none';
+        });
+
+        document.getElementById('start-btn').addEventListener('click', startPractice);
+        document.getElementById('end-session-btn').addEventListener('click', showResults);
+        document.getElementById('prev-question-btn').addEventListener('click', previousQuestion);
+        document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+        document.getElementById('flashcard-reveal-btn').addEventListener('click', revealFlashcardAnswer);
+        document.getElementById('restart-btn').addEventListener('click', restartPractice);
+        document.getElementById('new-config-btn').addEventListener('click', showConfigScreen);
+
+        // --- Core Functions ---
+        function startPractice() {
+            sessionConfig = {
+                mode: document.querySelector('input[name="mode"]:checked').value,
+                set: document.getElementById('question-set').value,
+                order: document.getElementById('order').value,
+                blockSize: parseInt(document.getElementById('block-size').value) || 20
+            };
+            
+            let questions = [...questionsData]; // Use a copy
+            if (sessionConfig.order === 'shuffled') {
+                questions.sort(() => Math.random() - 0.5);
+            }
+            
+            currentSessionQuestions = (sessionConfig.set === 'blocks') 
+                ? questions.slice(0, sessionConfig.blockSize)
+                : questions;
+
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            
+            configScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            practiceScreen.classList.remove('hidden');
+
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const question = currentSessionQuestions[currentQuestionIndex];
+            const savedAnswer = userAnswers[question.id];
+
+            document.getElementById('progress-text').textContent = `Pregunta ${currentQuestionIndex + 1} de ${currentSessionQuestions.length}`;
+            document.getElementById('question-text').textContent = `${question.id}. ${question.question}`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            const flashcardContainer = document.getElementById('flashcard-answer-container');
+            const revealBtn = document.getElementById('flashcard-reveal-btn');
+
+            optionsContainer.innerHTML = '';
+            optionsContainer.classList.toggle('hidden', sessionConfig.mode === 'flashcard');
+            flashcardContainer.classList.add('hidden');
+            revealBtn.classList.add('hidden');
+
+            if (sessionConfig.mode === 'quiz') {
+                question.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.className = 'option-btn';
+                    button.textContent = option;
+                    if (!savedAnswer) {
+                        button.onclick = () => handleQuizAnswer(option);
+                    }
+                    optionsContainer.appendChild(button);
+                });
+                if (savedAnswer) {
+                    showAnsweredState(savedAnswer);
+                }
+            } else { // Flashcard mode
+                if (savedAnswer?.revealed) {
+                    showFlashcardAnswer(question);
+                } else {
+                    revealBtn.classList.remove('hidden');
+                }
+            }
+            updateNavigation();
+        }
+        
+        function handleQuizAnswer(selectedOption) {
+            const question = currentSessionQuestions[currentQuestionIndex];
+            userAnswers[question.id] = selectedOption;
+            showAnsweredState(selectedOption);
+        }
+
+        function showAnsweredState(selectedOption) {
+            const question = currentSessionQuestions[currentQuestionIndex];
+            const isCorrect = selectedOption.startsWith(question.answer + ')');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === selectedOption) {
+                    btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+                }
+                if (btn.textContent.startsWith(question.answer + ')')) {
+                    btn.classList.add('correct');
+                }
+            });
+        }
+        
+        function showFlashcardAnswer(question) {
+            const answerText = document.getElementById('flashcard-answer-text');
+            const flashcardContainer = document.getElementById('flashcard-answer-container');
+            const fullAnswer = question.options.find(opt => opt.startsWith(question.answer + ')'));
+            
+            answerText.textContent = fullAnswer;
+            flashcardContainer.classList.remove('hidden');
+            document.getElementById('flashcard-reveal-btn').classList.add('hidden');
+        }
+
+        function revealFlashcardAnswer() {
+            const question = currentSessionQuestions[currentQuestionIndex];
+            userAnswers[question.id] = { revealed: true };
+            showFlashcardAnswer(question);
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prev-question-btn');
+            const nextBtn = document.getElementById('next-question-btn');
+            
+            prevBtn.disabled = currentQuestionIndex === 0;
+            
+            const isLastQuestion = currentQuestionIndex === currentSessionQuestions.length - 1;
+            nextBtn.innerHTML = isLastQuestion 
+                ? `Finalizar <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`
+                : `Siguiente <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2"><path d="M9 18l6-6-6-6"/></svg>`;
+        }
+        
+        function nextQuestion() {
+            if (currentQuestionIndex < currentSessionQuestions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        }
+
+        function showResults() {
+            let score = 0;
+            if (sessionConfig.mode === 'quiz') {
+                for (const question of currentSessionQuestions) {
+                    const userAnswer = userAnswers[question.id];
+                    if (userAnswer && userAnswer.startsWith(question.answer + ')')) {
+                        score++;
+                    }
+                }
+            }
+            
+            const total = currentSessionQuestions.length;
+            const percentage = total > 0 ? ((score / total) * 100).toFixed(0) : 0;
+
+            document.getElementById('score-correct').textContent = score;
+            document.getElementById('score-total').textContent = total;
+            document.getElementById('score-percentage').textContent = (sessionConfig.mode === 'quiz') 
+                ? `Obtuviste un ${percentage}% de aciertos.`
+                : '¡Buen trabajo de repaso!';
+
+            practiceScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+        }
+
+        function restartPractice() {
+            startPractice(); // Re-runs with the same saved config
+        }
+
+        function showConfigScreen() {
+            resultsScreen.classList.add('hidden');
+            practiceScreen.classList.add('hidden');
+            configScreen.classList.remove('hidden');
+        }
+    });
+    </script>
+</body>
+</html>
+
+
